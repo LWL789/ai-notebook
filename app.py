@@ -1,0 +1,173 @@
+import streamlit as st
+import tempfile
+from PIL import Image
+import pandas as pd
+from datetime import datetime
+
+from auth import show_login
+from database import get_db, save_wrong_note, get_notes_by_user, get_stats, update_mastery
+from ocr_service import ocr_image
+from ai_service import analyze_question
+import json
+
+st.set_page_config(page_title="AI智能错题本", layout="wide")
+
+if 'logged_in' not in st.session_state or not st.session_state['logged_in']:
+    show_login()
+    st.stop()
+
+st.sidebar.title(f"👤 {st.session_state['username']}")
+menu = st.sidebar.radio("导航", ["📥 录入错题", "📖 错题本", "📊 数据看板", "🚪 退出"])
+
+if menu == "🚪 退出":
+    st.session_state.clear()
+    st.rerun()
+
+db = next(get_db())
+user_id = st.session_state['user_id']
+
+if menu == "📥 录入错题":
+    st.header("📥 录入错题")
+    
+    with st.expander("📷 拍照上传（OCR识别）", expanded=True):
+        uploaded_file = st.file_uploader("上传错题图片", type=['jpg', 'png', 'jpeg'])
+        if uploaded_file:
+            col1, col2 = st.columns(2)
+            with col1:
+                img = Image.open(uploaded_file)
+                st.image(img, caption="原图", width=300)
+            
+            with col2:
+                if st.button("🔍 开始OCR识别"):
+                    with st.spinner("OCR识别中..."):
+                        ocr_text = ocr_image(uploaded_file)
+                        st.session_state['ocr_text'] = ocr_text
+                        if "失败" in ocr_text:
+                            st.error(ocr_text)
+                        else:
+                            st.success("识别成功！请检查下方文本")
+                            st.text_area("识别结果", ocr_text, height=150)
+                            
+                            with st.spinner("AI分析中..."):
+                                ai_result = analyze_question(ocr_text)
+                                st.session_state['ai_result'] = ai_result
+                                if "error" not in ai_result:
+                                    st.success("AI分析完成！")
+                                    st.json(ai_result)
+                                else:
+                                    st.error(ai_result.get("error", "AI分析失败"))
+    
+    st.divider()
+    
+    st.subheader("✏️ 手动录入 / 确认修改")
+    with st.form("manual_entry"):
+        default_text = st.session_state.get('ocr_text', '')
+        question = st.text_area("题目内容", value=default_text, height=120)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            tags = st.text_input("标签（逗号分隔）", placeholder="例如：数学,一元二次方程")
+        with col2:
+            mastery = st.selectbox("掌握程度", ["未掌握", "基本掌握", "已掌握"])
+        
+        submitted = st.form_submit_button("💾 保存错题")
+        if submitted:
+            if not question.strip():
+                st.error("题目内容不能为空")
+            else:
+                ai_data = st.session_state.get('ai_result', {})
+                std_answer = ai_data.get('standard_answer', '')
+                error_analysis = ai_data.get('error_analysis', '')
+                knowledge = ai_data.get('knowledge_points', '')
+                if tags:
+                    knowledge = tags
+                
+                note = save_wrong_note(
+                    db, user_id, question, std_answer, error_analysis,
+                    knowledge, tags, None
+                )
+                st.success(f"✅ 错题已保存 (ID: {note.id})")
+                st.session_state['ocr_text'] = ''
+                st.session_state['ai_result'] = {}
+
+elif menu == "📖 错题本":
+    st.header("📖 我的错题本")
+    
+    tags_list = st.text_input("按标签筛选（输入标签关键词）", placeholder="输入数学、物理等")
+    notes = get_notes_by_user(db, user_id, tags_list if tags_list else None)
+    
+    if not notes:
+        st.info("📭 还没有错题，快去录入吧！")
+    else:
+        st.write(f"共 {len(notes)} 条错题")
+        for note in notes:
+            with st.expander(f"📌 {note.question_text[:50]}... ({note.created_at.strftime('%Y-%m-%d')})"):
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    st.write("**题目**:", note.question_text)
+                    if note.standard_answer:
+                        st.write("**标准答案**:", note.standard_answer)
+                    if note.error_analysis:
+                        st.write("**错因分析**:", note.error_analysis)
+                    if note.knowledge_points:
+                        st.write("**知识点**:", note.knowledge_points)
+                    st.write("**标签**:", note.tags or "无")
+                    st.write("**掌握度**:", note.mastery_level)
+                
+                with col2:
+                    new_level = st.selectbox(
+                        "更新掌握度",
+                        ["未掌握", "基本掌握", "已掌握"],
+                        index=["未掌握","基本掌握","已掌握"].index(note.mastery_level) if note.mastery_level in ["未掌握","基本掌握","已掌握"] else 0,
+                        key=f"mastery_{note.id}"
+                    )
+                    if new_level != note.mastery_level:
+                        update_mastery(db, note.id, new_level)
+                        st.success("已更新")
+                        st.rerun()
+                    
+                    if st.button("🧠 生成变式题", key=f"vari_{note.id}"):
+                        with st.spinner("AI生成变式题中..."):
+                            ai_data = analyze_question(note.question_text)
+                            if "error" in ai_data:
+                                st.error(ai_data["error"])
+                            else:
+                                practices = ai_data.get("practice_questions", [])
+                                if practices:
+                                    st.subheader("📝 同类型巩固练习题")
+                                    for i, q in enumerate(practices, 1):
+                                        st.write(f"**{i}.** {q}")
+                                else:
+                                    st.warning("未生成变式题，请检查AI返回内容")
+
+elif menu == "📊 数据看板":
+    st.header("📊 学习数据看板")
+    total, mastered, rate = get_stats(db, user_id)
+    
+    col1, col2, col3 = st.columns(3)
+    col1.metric("📝 总错题数", total)
+    col2.metric("✅ 已掌握", mastered)
+    col3.metric("🎯 掌握率", f"{rate:.1f}%")
+    
+    st.subheader("📈 错题趋势（近7日）")
+    import random
+    data = pd.DataFrame({
+        "日期": pd.date_range(end=datetime.now(), periods=7).strftime("%m-%d"),
+        "新增错题": [random.randint(0, 5) for _ in range(7)]
+    })
+    st.line_chart(data.set_index("日期"))
+    
+    notes = get_notes_by_user(db, user_id)
+    tag_counts = {}
+    for note in notes:
+        if note.tags:
+            for tag in note.tags.split(','):
+                tag = tag.strip()
+                tag_counts[tag] = tag_counts.get(tag, 0) + 1
+    
+    if tag_counts:
+        st.subheader("🏷️ 知识点标签分布")
+        st.bar_chart(pd.DataFrame(list(tag_counts.items()), columns=["标签", "数量"]).set_index("标签"))
+
+st.sidebar.markdown("---")
+st.sidebar.caption("AI智能错题本 v1.0 | 数据本地存储")
