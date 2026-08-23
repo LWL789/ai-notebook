@@ -9,7 +9,8 @@ from database import get_db, save_wrong_note, get_notes_by_user, get_stats, upda
 from ocr_service import ocr_image
 from ai_service import analyze_question
 import json
-
+from models import init_db
+init_db()
 st.set_page_config(page_title="AI智能错题本", layout="wide")
 
 if 'logged_in' not in st.session_state or not st.session_state['logged_in']:
