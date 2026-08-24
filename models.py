@@ -28,8 +28,8 @@ class WrongNote(Base):
     user = relationship("User", back_populates="notes")
 
 User.notes = relationship("WrongNote", order_by=WrongNote.id, back_populates="user")
-
-DATABASE_URL = "sqlite:///wrong_notes.db"
+import os
+DATABASE_URL = os.getenv("DATABASE_URL")
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
