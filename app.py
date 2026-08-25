@@ -35,9 +35,10 @@ if menu == "📥 录入错题":
         ["📝 OCR识别文字", "🖼️ 直接存原图"],
         index=0
     )
-    with st.expander("📷 拍照上传（OCR识别）", expanded=True):
+        with st.expander("📷 拍照上传（OCR识别）", expanded=True):
         uploaded_file = st.file_uploader("上传错题图片", type=['jpg', 'png', 'jpeg'])
         if uploaded_file:
+            st.session_state['uploaded_image'] = uploaded_file.getvalue()
             col1, col2 = st.columns(2)
             with col1:
                 img = Image.open(uploaded_file)
@@ -77,6 +78,7 @@ if menu == "📥 录入错题":
             mastery = st.selectbox("掌握程度", ["未掌握", "基本掌握", "已掌握"])
         
         submitted = st.form_submit_button("💾 保存错题")
+                submitted = st.form_submit_button("💾 保存错题")
         if submitted:
             if not question.strip():
                 st.error("题目内容不能为空")
@@ -88,7 +90,7 @@ if menu == "📥 录入错题":
                 if tags:
                     knowledge = tags
                 
-                # 保存图片（如果有上传）
+                # 获取上传的图片
                 image_data = st.session_state.get('uploaded_image')
                 image_path = None
                 if image_data:
@@ -102,6 +104,8 @@ if menu == "📥 录入错题":
                 st.success(f"✅ 错题已保存 (ID: {note.id})")
                 st.session_state['ocr_text'] = ''
                 st.session_state['ai_result'] = {}
+                st.session_state['uploaded_image'] = None
+                st.rerun()
 
 elif menu == "📖 错题本":
     st.header("📖 我的错题本")
@@ -116,7 +120,7 @@ elif menu == "📖 错题本":
         for note in notes:
             with st.expander(f"📌 {note.question_text[:50]}... ({note.created_at.strftime('%Y-%m-%d')})"):
                 col1, col2 = st.columns([3, 1])
-                with col1:
+                                with col1:
                     # 显示图片（如果有）
                     if note.original_image:
                         import base64
@@ -125,7 +129,7 @@ elif menu == "📖 错题本":
                             st.image(image_data, caption="原图", width=300)
                         except:
                             pass
-                            st.write("**题目**:", note.question_text)
+                    st.write("**题目**:", note.question_text)
                     if note.standard_answer:
                         st.write("**标准答案**:", note.standard_answer)
                     if note.error_analysis:
