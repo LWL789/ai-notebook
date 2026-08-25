@@ -67,7 +67,7 @@ if menu == "📥 录入错题":
     st.divider()
     
     st.subheader("✏️ 手动录入 / 确认修改")
-        with st.form("manual_entry"):
+    with st.form("manual_entry"):
         default_text = st.session_state.get('ocr_text', '')
         question = st.text_area("题目内容", value=default_text, height=120)
         
