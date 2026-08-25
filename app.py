@@ -29,7 +29,12 @@ user_id = st.session_state['user_id']
 
 if menu == "📥 录入错题":
     st.header("📥 录入错题")
-    
+    # 选择模式：OCR 还是 存原图
+    mode = st.radio(
+        "选择录入方式：",
+        ["📝 OCR识别文字", "🖼️ 直接存原图"],
+        index=0
+    )
     with st.expander("📷 拍照上传（OCR识别）", expanded=True):
         uploaded_file = st.file_uploader("上传错题图片", type=['jpg', 'png', 'jpeg'])
         if uploaded_file:
@@ -83,9 +88,16 @@ if menu == "📥 录入错题":
                 if tags:
                     knowledge = tags
                 
+                # 保存图片（如果有上传）
+                image_data = st.session_state.get('uploaded_image')
+                image_path = None
+                if image_data:
+                    import base64
+                    image_path = base64.b64encode(image_data).decode('utf-8')
+                
                 note = save_wrong_note(
                     db, user_id, question, std_answer, error_analysis,
-                    knowledge, tags, None
+                    knowledge, tags, image_path
                 )
                 st.success(f"✅ 错题已保存 (ID: {note.id})")
                 st.session_state['ocr_text'] = ''
@@ -105,7 +117,15 @@ elif menu == "📖 错题本":
             with st.expander(f"📌 {note.question_text[:50]}... ({note.created_at.strftime('%Y-%m-%d')})"):
                 col1, col2 = st.columns([3, 1])
                 with col1:
-                    st.write("**题目**:", note.question_text)
+                    # 显示图片（如果有）
+                    if note.original_image:
+                        import base64
+                        try:
+                            image_data = base64.b64decode(note.original_image)
+                            st.image(image_data, caption="原图", width=300)
+                        except:
+                            pass
+                            st.write("**题目**:", note.question_text)
                     if note.standard_answer:
                         st.write("**标准答案**:", note.standard_answer)
                     if note.error_analysis:
