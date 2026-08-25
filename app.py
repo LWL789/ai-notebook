@@ -67,7 +67,7 @@ if menu == "📥 录入错题":
     st.divider()
     
     st.subheader("✏️ 手动录入 / 确认修改")
-    with st.form("manual_entry"):
+        with st.form("manual_entry"):
         default_text = st.session_state.get('ocr_text', '')
         question = st.text_area("题目内容", value=default_text, height=120)
         
@@ -78,7 +78,6 @@ if menu == "📥 录入错题":
             mastery = st.selectbox("掌握程度", ["未掌握", "基本掌握", "已掌握"])
         
         submitted = st.form_submit_button("💾 保存错题")
-                submitted = st.form_submit_button("💾 保存错题")
         if submitted:
             if not question.strip():
                 st.error("题目内容不能为空")
