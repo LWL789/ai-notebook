@@ -52,7 +52,7 @@ if menu == "📥 录入错题":
             
             with col2:
                 if mode == "📝 OCR识别文字":
-                    if st.button("🔍 开始OCR识别"):
+                    if st.form_submit_button("🔍 开始OCR识别"):
                         with st.spinner("OCR识别中..."):
                             ocr_text = ocr_image(uploaded_file)
                             st.session_state['ocr_text'] = ocr_text
