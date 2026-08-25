@@ -119,7 +119,7 @@ elif menu == "📖 错题本":
         for note in notes:
             with st.expander(f"📌 {note.question_text[:50]}... ({note.created_at.strftime('%Y-%m-%d')})"):
                 col1, col2 = st.columns([3, 1])
-                                with col1:
+                    with col1:
                     # 显示图片（如果有）
                     if note.original_image:
                         import base64
