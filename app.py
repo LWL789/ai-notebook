@@ -35,7 +35,7 @@ if menu == "📥 录入错题":
         ["📝 OCR识别文字", "🖼️ 直接存原图"],
         index=0
     )
-        with st.expander("📷 拍照上传（OCR识别）", expanded=True):
+    with st.expander("📷 拍照上传（OCR识别）", expanded=True):
         uploaded_file = st.file_uploader("上传错题图片", type=['jpg', 'png', 'jpeg'])
         if uploaded_file:
             st.session_state['uploaded_image'] = uploaded_file.getvalue()
