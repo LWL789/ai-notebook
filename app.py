@@ -126,7 +126,11 @@ elif menu == "📖 错题本":
                         update_mastery(db, note.id, new_level)
                         st.success("已更新")
                         st.rerun()
-                    
+                    if st.button("🗑️ 删除错题", key=f"del_{note.id}"):
+                        db.delete(note)
+                        db.commit()
+                        st.success("错题已删除")
+                        st.rerun()
                     if st.button("🧠 生成变式题", key=f"vari_{note.id}"):
                         with st.spinner("AI生成变式题中..."):
                             ai_data = analyze_question(note.question_text)
