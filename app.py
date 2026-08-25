@@ -29,14 +29,20 @@ user_id = st.session_state['user_id']
 
 if menu == "📥 录入错题":
     st.header("📥 录入错题")
+    
     # 选择模式：OCR 还是 存原图
     mode = st.radio(
         "选择录入方式：",
         ["📝 OCR识别文字", "🖼️ 直接存原图"],
         index=0
     )
-    with st.expander("📷 拍照上传（OCR识别）", expanded=True):
-        uploaded_file = st.file_uploader("上传错题图片", type=['jpg', 'png', 'jpeg'])
+    
+    st.subheader("📷 上传错题图片")
+    
+    # 用 with 包裹上传和表单
+    with st.form("entry_form"):
+        uploaded_file = st.file_uploader("选择图片", type=['jpg', 'png', 'jpeg'])
+        
         if uploaded_file:
             st.session_state['uploaded_image'] = uploaded_file.getvalue()
             col1, col2 = st.columns(2)
@@ -45,29 +51,30 @@ if menu == "📥 录入错题":
                 st.image(img, caption="原图", width=300)
             
             with col2:
-                if st.button("🔍 开始OCR识别"):
-                    with st.spinner("OCR识别中..."):
-                        ocr_text = ocr_image(uploaded_file)
-                        st.session_state['ocr_text'] = ocr_text
-                        if "失败" in ocr_text:
-                            st.error(ocr_text)
-                        else:
-                            st.success("识别成功！请检查下方文本")
-                            st.text_area("识别结果", ocr_text, height=150)
-                            
-                            with st.spinner("AI分析中..."):
-                                ai_result = analyze_question(ocr_text)
-                                st.session_state['ai_result'] = ai_result
-                                if "error" not in ai_result:
-                                    st.success("AI分析完成！")
-                                    st.json(ai_result)
-                                else:
-                                    st.error(ai_result.get("error", "AI分析失败"))
-    
-    st.divider()
-    
-    st.subheader("✏️ 手动录入 / 确认修改")
-    with st.form("manual_entry"):
+                if mode == "📝 OCR识别文字":
+                    if st.button("🔍 开始OCR识别"):
+                        with st.spinner("OCR识别中..."):
+                            ocr_text = ocr_image(uploaded_file)
+                            st.session_state['ocr_text'] = ocr_text
+                            if "失败" in ocr_text:
+                                st.error(ocr_text)
+                            else:
+                                st.success("识别成功！请检查下方文本")
+                                st.text_area("识别结果", ocr_text, height=150)
+                                
+                                with st.spinner("AI分析中..."):
+                                    ai_result = analyze_question(ocr_text)
+                                    st.session_state['ai_result'] = ai_result
+                                    if "error" not in ai_result:
+                                        st.success("AI分析完成！")
+                                        st.json(ai_result)
+                                    else:
+                                        st.error(ai_result.get("error", "AI分析失败"))
+                else:
+                    st.info("🖼️ 直接存原图模式：图片将保存，不进行OCR识别")
+        
+        st.divider()
+        
         default_text = st.session_state.get('ocr_text', '')
         question = st.text_area("题目内容", value=default_text, height=120)
         
@@ -79,8 +86,8 @@ if menu == "📥 录入错题":
         
         submitted = st.form_submit_button("💾 保存错题")
         if submitted:
-            if not question.strip():
-                st.error("题目内容不能为空")
+            if not question.strip() and not st.session_state.get('uploaded_image'):
+                st.error("请至少输入题目内容或上传图片")
             else:
                 ai_data = st.session_state.get('ai_result', {})
                 std_answer = ai_data.get('standard_answer', '')
@@ -89,7 +96,6 @@ if menu == "📥 录入错题":
                 if tags:
                     knowledge = tags
                 
-                # 获取上传的图片
                 image_data = st.session_state.get('uploaded_image')
                 image_path = None
                 if image_data:
@@ -105,7 +111,6 @@ if menu == "📥 录入错题":
                 st.session_state['ai_result'] = {}
                 st.session_state['uploaded_image'] = None
                 st.rerun()
-
 elif menu == "📖 错题本":
     st.header("📖 我的错题本")
     
