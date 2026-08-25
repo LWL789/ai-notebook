@@ -21,7 +21,7 @@ class WrongNote(Base):
     error_analysis = Column(Text, nullable=True)
     knowledge_points = Column(String(200), nullable=True)
     tags = Column(String(200), nullable=True)
-    original_image = Column(String(500), nullable=True)
+    original_image = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.now)
     mastery_level = Column(String(20), default='未掌握')
 
