@@ -166,6 +166,8 @@ elif menu == "📖 错题本":
                     if st.button("🧠 生成变式题", key=f"vari_{note.id}"):
                         with st.spinner("AI生成变式题中..."):
                             ai_data = analyze_question(note.question_text)
+                            # 调试：显示AI返回的完整内容
+                            st.write("**AI返回内容**：", ai_data)
                             if "error" in ai_data:
                                 st.error(ai_data["error"])
                             else:
@@ -176,6 +178,7 @@ elif menu == "📖 错题本":
                                         st.write(f"**{i}.** {q}")
                                 else:
                                     st.warning("未生成变式题，请检查AI返回内容")
+                                    st.write("AI返回的数据结构：", list(ai_data.keys()))
 
 elif menu == "📊 数据看板":
     st.header("📊 学习数据看板")
