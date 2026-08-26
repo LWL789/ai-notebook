@@ -3,11 +3,8 @@ from config import API_KEY, BASE_URL, MODEL_NAME
 import json
 import re
 
-# 新版 OpenAI 客户端初始化方式
-client = OpenAI(
-    api_key=API_KEY,
-    base_url=BASE_URL,
-)
+# 初始化客户端
+client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
 
 def analyze_question(question_text: str):
     """
@@ -47,9 +44,6 @@ def analyze_question(question_text: str):
                 result["practice_questions"] = []
             return result
         else:
-            return {"error": "无法解析AI返回内容"}
-    except Exception as e:
-        return {"error": f"大模型调用失败: {str(e)}"}
             return {"error": "无法解析AI返回内容"}
     except Exception as e:
         return {"error": f"大模型调用失败: {str(e)}"}
