@@ -135,8 +135,8 @@ elif menu == "📖 错题本":
                             # 点击放大按钮
                             if st.button("🔍 点击放大", key=f"enlarge_{note.id}"):
                                 st.image(image_data, caption="放大查看", use_column_width=True)
-                        except:
-                            pass
+                        except Exception as e:
+                            st.warning(f"图片加载失败: {e}")
                     st.write("**题目**:", note.question_text)
                     if note.standard_answer:
                         st.write("**标准答案**:", note.standard_answer)
