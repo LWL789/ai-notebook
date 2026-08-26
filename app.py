@@ -131,10 +131,10 @@ elif menu == "📖 错题本":
                         import base64
                         try:
                             image_data = base64.b64decode(note.original_image)
-                            st.image(image_data, caption="原图", width=300, use_column_width=True)
+                            st.image(image_data, caption="原图", width=300, use_container_width=True)
                             # 点击放大按钮
                             if st.button("🔍 点击放大", key=f"enlarge_{note.id}"):
-                                st.image(image_data, caption="放大查看", use_column_width=True)
+                                st.image(image_data, caption="放大查看", use_container_width=True)
                         except Exception as e:
                             st.warning(f"图片加载失败: {e}")
                     st.write("**题目**:", note.question_text)
