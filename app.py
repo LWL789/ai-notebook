@@ -170,7 +170,7 @@ elif menu == "📖 错题本":
                     st.write("**标签**:", note.tags or "无")
                     st.write("**掌握度**:", note.mastery_level)
                 
-                                with col2:
+                with col2:
                     # 🆕 修改标签
                     new_tags = st.text_input(
                         "修改标签",
