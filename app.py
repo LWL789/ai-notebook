@@ -170,7 +170,21 @@ elif menu == "📖 错题本":
                     st.write("**标签**:", note.tags or "无")
                     st.write("**掌握度**:", note.mastery_level)
                 
-                with col2:
+                                with col2:
+                    # 🆕 修改标签
+                    new_tags = st.text_input(
+                        "修改标签",
+                        value=note.tags or "",
+                        placeholder="用逗号分隔，如：数学,函数",
+                        key=f"tags_{note.id}"
+                    )
+                    if new_tags != note.tags:
+                        note.tags = new_tags
+                        db.commit()
+                        st.success("标签已更新")
+                        st.rerun()
+                    
+                    # 更新掌握度
                     new_level = st.selectbox(
                         "更新掌握度",
                         ["未掌握", "基本掌握", "已掌握"],
@@ -181,6 +195,7 @@ elif menu == "📖 错题本":
                         update_mastery(db, note.id, new_level)
                         st.success("已更新")
                         st.rerun()
+                    
                     if st.button("🗑️ 删除错题", key=f"del_{note.id}"):
                         db.delete(note)
                         db.commit()
