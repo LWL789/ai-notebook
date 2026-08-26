@@ -190,7 +190,34 @@ elif menu == "📖 错题本":
 
 elif menu == "📊 数据看板":
     st.header("📊 学习数据看板")
-    total, mastered, rate = get_stats(db, user_id)
+    
+    # 🆕 先获取所有错题
+    all_notes = get_notes_by_user(db, user_id)
+    
+    # 🆕 提取所有标签
+    all_tags = set()
+    for note in all_notes:
+        if note.tags:
+            for tag in note.tags.split(','):
+                all_tags.add(tag.strip())
+    
+    # 🆕 标签筛选器
+    tag_filter = st.selectbox(
+        "📌 按标签筛选数据",
+        ["全部"] + sorted(list(all_tags)),
+        index=0
+    )
+    
+    # 🆕 根据标签筛选错题
+    if tag_filter == "全部":
+        notes = all_notes
+    else:
+        notes = [note for note in all_notes if note.tags and tag_filter in note.tags]
+    
+    # 统计筛选后的数据
+    total = len(notes)
+    mastered = sum(1 for n in notes if n.mastery_level == '已掌握')
+    rate = (mastered / total * 100) if total > 0 else 0
     
     col1, col2, col3 = st.columns(3)
     col1.metric("📝 总错题数", total)
@@ -199,13 +226,30 @@ elif menu == "📊 数据看板":
     
     st.subheader("📈 错题趋势（近7日）")
     import random
-    data = pd.DataFrame({
-        "日期": pd.date_range(end=datetime.now(), periods=7).strftime("%m-%d"),
-        "新增错题": [random.randint(0, 5) for _ in range(7)]
-    })
+    # 用筛选后的数据生成趋势图
+    if notes:
+        # 按日期统计新增错题
+        from collections import defaultdict
+        date_counts = defaultdict(int)
+        for note in notes:
+            date_str = note.created_at.strftime("%m-%d")
+            date_counts[date_str] += 1
+        
+        # 生成最近7天的日期
+        dates = pd.date_range(end=datetime.now(), periods=7).strftime("%m-%d")
+        counts = [date_counts.get(d, 0) for d in dates]
+        data = pd.DataFrame({
+            "日期": dates,
+            "新增错题": counts
+        })
+    else:
+        data = pd.DataFrame({
+            "日期": pd.date_range(end=datetime.now(), periods=7).strftime("%m-%d"),
+            "新增错题": [0] * 7
+        })
     st.line_chart(data.set_index("日期"))
     
-    notes = get_notes_by_user(db, user_id)
+    # 🆕 标签分布（只显示筛选后的数据）
     tag_counts = {}
     for note in notes:
         if note.tags:
@@ -214,8 +258,7 @@ elif menu == "📊 数据看板":
                 tag_counts[tag] = tag_counts.get(tag, 0) + 1
     
     if tag_counts:
-        st.subheader("🏷️ 知识点标签分布")
+        st.subheader("🏷️ 当前标签分布")
         st.bar_chart(pd.DataFrame(list(tag_counts.items()), columns=["标签", "数量"]).set_index("标签"))
-
-st.sidebar.markdown("---")
-st.sidebar.caption("AI智能错题本 v1.0 | 数据本地存储")
+    else:
+        st.info("📭 暂无标签数据，请先为错题添加标签")
