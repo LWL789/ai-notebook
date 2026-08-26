@@ -75,9 +75,17 @@ if menu == "📥 录入错题":
         
         st.divider()
         
-        default_text = st.session_state.get('ocr_text', '')
-        question = st.text_area("题目内容", value=default_text, height=120)
+        # 🆕 根据模式动态显示题目输入框
+        if mode == "📝 OCR识别文字":
+            # OCR 模式：显示文本框，方便修改
+            default_text = st.session_state.get('ocr_text', '')
+            question = st.text_area("题目内容（可手动修改）", value=default_text, height=120)
+        else:
+            # 直接存原图模式：不显示题目输入框，自动填入提示
+            question = "（原图模式，无文字内容）"
+            st.info("💡 直接存原图模式已保存图片，无需输入题目文字。")
         
+        # 标签和掌握度始终显示
         col1, col2 = st.columns(2)
         with col1:
             tags = st.text_input("标签（逗号分隔）", placeholder="例如：数学,一元二次方程")
@@ -86,8 +94,9 @@ if menu == "📥 录入错题":
         
         submitted = st.form_submit_button("💾 保存错题")
         if submitted:
-            if not question.strip() and not st.session_state.get('uploaded_image'):
-                st.error("请至少输入题目内容或上传图片")
+            # 保存逻辑不变，但如果是存原图模式，question 自动填入提示
+            if not uploaded_file:
+                st.error("请至少上传一张图片")
             else:
                 ai_data = st.session_state.get('ai_result', {})
                 std_answer = ai_data.get('standard_answer', '')
