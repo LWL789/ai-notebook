@@ -22,7 +22,7 @@ def authenticate_user(db, username, password):
         return user
     return None
 
-def save_wrong_note(db, user_id, question_text, standard_answer, error_analysis, knowledge_points, tags, image_path=None):
+def save_wrong_note(db, user_id, question_text, standard_answer, error_analysis, knowledge_points, tags, image_path=None, mastery_level=None):
     note = WrongNote(
         user_id=user_id,
         question_text=question_text,
@@ -30,7 +30,8 @@ def save_wrong_note(db, user_id, question_text, standard_answer, error_analysis,
         error_analysis=error_analysis,
         knowledge_points=knowledge_points,
         tags=tags,
-        original_image=image_path
+        original_image=image_path,
+        mastery_level=mastery_level or "未掌握"
     )
     db.add(note)
     db.commit()
