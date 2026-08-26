@@ -104,13 +104,14 @@ if menu == "📥 录入错题":
                 
                 note = save_wrong_note(
                     db, user_id, question, std_answer, error_analysis,
-                    knowledge, tags, image_path
+                    knowledge, tags, image_path, mastery
                 )
                 st.success(f"✅ 错题已保存 (ID: {note.id})")
                 st.session_state['ocr_text'] = ''
                 st.session_state['ai_result'] = {}
                 st.session_state['uploaded_image'] = None
                 st.rerun()
+
 elif menu == "📖 错题本":
     st.header("📖 我的错题本")
     
@@ -130,7 +131,10 @@ elif menu == "📖 错题本":
                         import base64
                         try:
                             image_data = base64.b64decode(note.original_image)
-                            st.image(image_data, caption="原图", width=300)
+                            st.image(image_data, caption="原图", width=300, use_column_width=True)
+                            # 点击放大按钮
+                            if st.button("🔍 点击放大", key=f"enlarge_{note.id}"):
+                                st.image(image_data, caption="放大查看", use_column_width=True)
                         except:
                             pass
                     st.write("**题目**:", note.question_text)
