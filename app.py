@@ -121,7 +121,71 @@ if menu == "📥 录入错题":
                 st.session_state['uploaded_image'] = None
                 st.rerun()
 
-
+elif menu == "📖 错题本":
+    st.header("📖 我的错题本")
+    
+    # 筛选条件
+    col_filter1, col_filter2 = st.columns(2)
+    with col_filter1:
+        tags_list = st.text_input("按标签筛选", placeholder="输入标签关键词，如：数学")
+    with col_filter2:
+        mastery_filter = st.selectbox(
+            "按掌握度筛选",
+            ["全部", "未掌握", "基本掌握", "已掌握"],
+            index=0
+        )
+    
+    # 获取所有错题
+    all_notes = get_notes_by_user(db, user_id, tags_list if tags_list else None)
+    
+    # 根据掌握度筛选
+    if mastery_filter != "全部":
+        notes = [note for note in all_notes if note.mastery_level == mastery_filter]
+    else:
+        notes = all_notes
+    
+    if not notes:
+        st.info("📭 没有符合条件的错题")
+    else:
+        st.write(f"共 {len(notes)} 条错题")
+        for note in notes:
+            with st.expander(f"📌 {note.question_text[:50]}... ({note.created_at.strftime('%Y-%m-%d')})"):
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    # 显示图片（如果有）
+                    if note.original_image:
+                        import base64
+                        try:
+                            image_data = base64.b64decode(note.original_image)
+                            st.image(image_data, caption="原图", width=300)
+                        except:
+                            pass
+                    st.write("**题目**:", note.question_text)
+                    if note.standard_answer:
+                        st.write("**标准答案**:", note.standard_answer)
+                    if note.error_analysis:
+                        st.write("**错因分析**:", note.error_analysis)
+                    if note.knowledge_points:
+                        st.write("**知识点**:", note.knowledge_points)
+                    st.write("**标签**:", note.tags or "无")
+                    st.write("**掌握度**:", note.mastery_level)
+                
+                with col2:
+                    new_level = st.selectbox(
+                        "更新掌握度",
+                        ["未掌握", "基本掌握", "已掌握"],
+                        index=["未掌握","基本掌握","已掌握"].index(note.mastery_level) if note.mastery_level in ["未掌握","基本掌握","已掌握"] else 0,
+                        key=f"mastery_{note.id}"
+                    )
+                    if new_level != note.mastery_level:
+                        update_mastery(db, note.id, new_level)
+                        st.success("已更新")
+                        st.rerun()
+                    if st.button("🗑️ 删除错题", key=f"del_{note.id}"):
+                        db.delete(note)
+                        db.commit()
+                        st.success("错题已删除")
+                        st.rerun()
                     
 
 elif menu == "📊 数据看板":
